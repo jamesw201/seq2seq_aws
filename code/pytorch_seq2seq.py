@@ -15,12 +15,7 @@ from utils import translate_sentence, bleu, save_checkpoint, load_checkpoint
 
 torch.cuda.is_available()
 
-# Copy inference pre/post-processing script so that it'll be included in the model package
-# os.system('mkdir /opt/ml/model/code')
-# # os.system('cp inference.py /opt/ml/model/code')
-# os.system('cp requirements.txt /opt/ml/model/code')
 
-# TODO: how do we get these from the S3 parameters?
 spacy_eng = spacy.load('en_core_web_sm')
 spacy_ger = spacy.load('de_core_news_sm')
 

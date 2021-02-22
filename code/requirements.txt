@@ -1,5 +1,5 @@
 tensorboard==1.15.0
 torchtext==0.6.0
 spacy==2.2
-./en_core_web_sm-2.2.5.tar.gz
+./en_core_web_sm-2.2.0.tar.gz
 ./de_core_news_sm-2.2.0.tar.gz
