@@ -32,8 +32,8 @@ estimator = PyTorch(
   # these hyperparameters are passed to the main script as arguments and 
   # can be overridden when fine tuning the algorithm
   hyperparameters={
-  'epochs': 20,
-  'batch-size': 64,
+    'epochs': 20,
+    'batch-size': 64
   }
 )
 
@@ -42,5 +42,6 @@ estimator = PyTorch(
 # before initializing the container
 estimator.fit({
     'train': bucket+'/training',
-    'test': bucket+'/testing'
+    'test': bucket+'/testing',
+    'eval': bucket+'/evaluation'
 })

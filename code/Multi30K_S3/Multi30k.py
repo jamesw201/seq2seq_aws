@@ -1,13 +1,14 @@
 import os
-from Multi30K_S3.MachineTranslation import MachineTranslation
+import xml.etree.ElementTree as ET
+import glob
+import io
+import codecs
+from torchtext import data
+from io import TextIOWrapper, BytesIO
+import tarfile
 
-class Multi30k(MachineTranslation):
-    # urls = ['http://www.quest.dcs.shef.ac.uk/wmt16_files_mmt/training.tar.gz',
-    #         'http://www.quest.dcs.shef.ac.uk/wmt16_files_mmt/validation.tar.gz',
-    #         'http://www.quest.dcs.shef.ac.uk/'
-    #         'wmt17_files_mmt/mmt_task1_test2016.tar.gz']
-    
-    # Expected url array
+
+class Multi30k(data.Dataset):
     urls = ['https://ml-experiments-20210207.s3-eu-west-1.amazonaws.com/training/training.tar.gz',
               'https://ml-experiments-20210207.s3-eu-west-1.amazonaws.com/testing/validation.tar.gz',
               'https://ml-experiments-20210207.s3-eu-west-1.amazonaws.com/test.tar.gz']
@@ -15,8 +16,44 @@ class Multi30k(MachineTranslation):
     dirname = ''
     directoryname = ''
 
-    @classmethod
-    def splits(cls, exts, fields,
-               train='training/training.tar.gz', validation='testing/validation.tar.gz', test='test.tar.gz', **kwargs):
+    @staticmethod
+    def sort_key(ex):
+        return data.interleave_keys(len(ex.src), len(ex.trg))
 
-        return super(Multi30k, cls).splits(exts, fields, 'ml-experiments-20210207', train, validation, test, **kwargs)
+    def __init__(self, tar_file, path, exts, fields, **kwargs):
+        if not isinstance(fields[0], (tuple, list)):
+            fields = [('src', fields[0]), ('trg', fields[1])]
+
+        mtrans = []
+
+        uncompressed_keys=[f'{path}{ext}' for ext in exts]
+        print(f'uncompressed_keys: {uncompressed_keys}')
+
+        with tarfile.open(tar_file) as tar:
+            source = tar.extractfile(uncompressed_keys[0]).read()
+            target = tar.extractfile(uncompressed_keys[1]).read()
+            src_lines = source.splitlines()
+            trg_lines = target.splitlines()
+            print(f'source: {src_lines[0]}')
+            print(f'target: {trg_lines[0]}')
+            for src_line, trg_line in zip(src_lines, trg_lines):
+                src_line, trg_line = str(src_line).strip(), str(trg_line).strip()
+                if src_line != '' and trg_line != '':
+                    mtrans.append(data.Example.fromlist(
+                        [src_line, trg_line], fields))
+
+        super(Multi30k, self).__init__(mtrans, fields, **kwargs)
+
+
+    @classmethod
+    def splits(cls, exts, fields, **kwargs):
+        train_path = os.environ['SM_CHANNEL_TRAIN'] + '/' + os.listdir(os.environ['SM_CHANNEL_TRAIN'])[0]
+        validation_path = os.environ['SM_CHANNEL_TEST'] + '/' + os.listdir(os.environ['SM_CHANNEL_TEST'])[0]
+        evaluation_path = os.environ['SM_CHANNEL_EVAL'] + '/' + os.listdir(os.environ['SM_CHANNEL_EVAL'])[0]
+
+        train_data = cls(train_path, 'train', exts, fields, **kwargs)
+        val_data = cls(validation_path, 'val', exts, fields, **kwargs)
+        test_data = cls(evaluation_path, 'test2016', exts, fields, **kwargs)
+
+        return tuple(d for d in (train_data, val_data, test_data)
+                     if d is not None)

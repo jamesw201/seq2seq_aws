@@ -3,7 +3,7 @@ import argparse
 import torch
 import torch.nn as nn
 import torch.optim as optim
-# from torchtext.datasets import Multi30k
+
 from torchtext.data import Field, BucketIterator
 import numpy as np
 import spacy
@@ -16,9 +16,9 @@ from utils import translate_sentence, bleu, save_checkpoint, load_checkpoint
 torch.cuda.is_available()
 
 # Copy inference pre/post-processing script so that it'll be included in the model package
-os.system('mkdir /opt/ml/model/code')
-# os.system('cp inference.py /opt/ml/model/code')
-os.system('cp requirements.txt /opt/ml/model/code')
+# os.system('mkdir /opt/ml/model/code')
+# # os.system('cp inference.py /opt/ml/model/code')
+# os.system('cp requirements.txt /opt/ml/model/code')
 
 # TODO: how do we get these from the S3 parameters?
 spacy_eng = spacy.load('en_core_web_sm')
@@ -110,6 +110,9 @@ output_size = len(english.vocab)
 
 
 def main(args):
+    train_channel = os.environ['SM_CHANNEL_TRAIN']
+    print(f'train: {os.listdir(train_channel)}')
+
     # Tensorboard
     writer = SummaryWriter(f'runs/loss_plot')
     step = 0
@@ -184,8 +187,6 @@ if __name__ == "__main__":
     parser.add_argument('--learning-rate', type=float,   default=0.001)
     parser.add_argument('--batch-size',    type=int,     default=64)
     parser.add_argument('--load-model',    type=bool,    default=False)
-#     parser.add_argument('--weight-decay',  type=float, default=2e-4)
-#     parser.add_argument('--momentum',      type=float, default='0.9')
     parser.add_argument('--optimizer',     type=str,     default='adam')
     parser.add_argument('--enc-dropout',   type=float,   default=0.5)
     parser.add_argument('--dec-dropout',   type=float,   default=0.5)
@@ -198,9 +199,9 @@ if __name__ == "__main__":
     parser.add_argument('--model_dir',        type=str)
     parser.add_argument('--model_output_dir', type=str,   default=os.environ['SM_MODEL_DIR'])
     parser.add_argument('--gpu-count',        type=int,   default=os.environ['SM_NUM_GPUS'])
-#     parser.add_argument('--training',         type=str,   default=os.environ['SM_CHANNEL_TRAIN'])
-#     parser.add_argument('--validation',       type=str,   default=os.environ['SM_CHANNEL_VALIDATION'])
-#     parser.add_argument('--eval',             type=str,   default=os.environ['SM_CHANNEL_EVAL'])
+    parser.add_argument('--training',         type=str,   default=os.environ['SM_CHANNEL_TRAIN'])
+    parser.add_argument('--validation',       type=str,   default=os.environ['SM_CHANNEL_TEST'])
+    parser.add_argument('--eval',             type=str,   default=os.environ['SM_CHANNEL_EVAL'])
     
     args = parser.parse_args()
     main(args)
